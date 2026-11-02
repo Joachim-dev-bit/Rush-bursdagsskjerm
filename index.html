@@ -40,22 +40,136 @@ button{border:1px solid #ffffff77;background:#061a3c;color:white;border-radius:1
 <main id="screen">
 <header><h1><span>GRATULERER</span><span>MED DAGEN!</span></h1></header>
 <section id="names"></section>
-<div id="toolbar"><button id="editBtn">Rediger navn</button></div>
+<div id="toolbar"><button id="loginBtn">Logg inn med Google</button> <button id="editBtn" style="display:none">Rediger navn</button> <button id="logoutBtn" style="display:none">Logg ut</button></div>
 </main>
 <section id="editor"><div id="panel">
-<h2>Rediger bursdagsnavn</h2><p>Legg til én boks per bursdagsbarn. Lagre når du er ferdig.</p>
+<h2>Rediger bursdagsnavn</h2><p>Legg til én boks per bursdagsbarn. Lagre når du er ferdig.</p><p id="status" aria-live="polite">Kobler til databasen …</p>
 <div id="fields"></div><div class="actions">
 <button id="addBtn">＋ Legg til boks</button><button id="saveBtn">Lagre og vis</button><button id="cancelBtn">Avbryt</button>
 </div></div></section>
-<script>
-const KEY="rush-birthday-portrait-v1";let names=["Navn"];
-try{const v=JSON.parse(localStorage.getItem(KEY));if(Array.isArray(v)&&v.length)names=v.map(String)}catch(e){}
-const namesEl=document.getElementById("names"),fields=document.getElementById("fields"),editor=document.getElementById("editor");
-function render(){namesEl.replaceChildren();names.forEach(n=>{const box=document.createElement("div");box.className="namebox";const s=document.createElement("span");s.textContent=n||" ";box.append(s);namesEl.append(box)})}
-function edit(){fields.replaceChildren();names.forEach((n,i)=>{const row=document.createElement("div");row.className="row";const input=document.createElement("input");input.value=n;input.placeholder="Navn "+(i+1);input.maxLength=48;const del=document.createElement("button");del.textContent="Fjern";del.onclick=()=>{if(names.length>1){names.splice(i,1);edit()}};row.append(input,del);fields.append(row)});editor.classList.add("open")}
-document.getElementById("editBtn").onclick=edit;
-document.getElementById("addBtn").onclick=()=>{names.push("");edit();fields.lastElementChild?.querySelector("input")?.focus()};
-document.getElementById("saveBtn").onclick=()=>{names=Array.from(fields.querySelectorAll("input")).map(x=>x.value.trim());if(!names.length)names=["Navn"];localStorage.setItem(KEY,JSON.stringify(names));render();editor.classList.remove("open")};
-document.getElementById("cancelBtn").onclick=()=>editor.classList.remove("open");
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDI3q1u0RDBBhwoqpI2emtmdXrvbU3a_-s",
+  authDomain: "rush-storskjerm.firebaseapp.com",
+  databaseURL: "https://rush-storskjerm-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "rush-storskjerm",
+  storageBucket: "rush-storskjerm.firebasestorage.app",
+  messagingSenderId: "744520048601",
+  appId: "1:744520048601:web:6451390a759d77c8ae03c8",
+  measurementId: "G-MMREKWKP5S"
+};
+
+const ADMIN_EMAIL = "haugesund@rushtrampolinepark.no";
+const ADMIN_MODE = new URLSearchParams(location.search).get("admin") === "1";
+const CACHE_KEY = "rush-birthday-portrait-v1";
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+let names = ["Navn"];
+let currentUser = null;
+const namesEl = document.getElementById("names");
+const fields = document.getElementById("fields");
+const editor = document.getElementById("editor");
+const statusEl = document.getElementById("status");
+const loginBtn = document.getElementById("loginBtn");
+const editBtn = document.getElementById("editBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+
+try {
+  const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
+  if (Array.isArray(cached) && cached.length) names = cached.map(String);
+} catch (_) {}
+
+function setStatus(message) { if (statusEl) statusEl.textContent = message; }
+function render() {
+  namesEl.replaceChildren();
+  names.forEach(name => {
+    const box = document.createElement("div"); box.className = "namebox";
+    const span = document.createElement("span"); span.textContent = name || " ";
+    box.append(span); namesEl.append(box);
+  });
+}
+function updateAdminControls() {
+  const allowed = ADMIN_MODE && currentUser && currentUser.email && currentUser.email.toLowerCase() === ADMIN_EMAIL && currentUser.emailVerified;
+  loginBtn.style.display = ADMIN_MODE && !currentUser ? "inline-block" : "none";
+  editBtn.style.display = allowed ? "inline-block" : "none";
+  logoutBtn.style.display = ADMIN_MODE && currentUser ? "inline-block" : "none";
+  if (ADMIN_MODE && currentUser && !allowed) setStatus("Denne Google-kontoen har ikke tilgang. Logg inn med " + ADMIN_EMAIL + ".");
+  else if (ADMIN_MODE && allowed) setStatus("Innlogget som " + currentUser.email + ". Endringer synkroniseres med TV-en.");
+}
+function edit() {
+  if (!currentUser || currentUser.email?.toLowerCase() !== ADMIN_EMAIL || !currentUser.emailVerified) {
+    setStatus("Du må logge inn med riktig Google-konto først."); return;
+  }
+  fields.replaceChildren();
+  names.forEach((name, index) => {
+    const row = document.createElement("div"); row.className = "row";
+    const input = document.createElement("input"); input.value = name; input.placeholder = "Navn " + (index + 1); input.maxLength = 48;
+    const remove = document.createElement("button"); remove.textContent = "Fjern";
+    remove.onclick = () => { if (fields.children.length > 1) { row.remove(); Array.from(fields.querySelectorAll("input")).forEach((el, i) => el.placeholder = "Navn " + (i + 1)); } };
+    row.append(input, remove); fields.append(row);
+  });
+  editor.classList.add("open");
+}
+
+// Live read: TV and admin page both listen to the same database path.
+onValue(ref(db, "birthdayDisplay/names"), snapshot => {
+  const value = snapshot.val();
+  if (Array.isArray(value)) names = value.map(v => String(v ?? ""));
+  else if (value && typeof value === "object") names = Object.keys(value).sort((a,b) => Number(a)-Number(b)).map(k => String(value[k] ?? ""));
+  else names = ["Navn"];
+  if (!names.length) names = ["Navn"];
+  localStorage.setItem(CACHE_KEY, JSON.stringify(names));
+  render();
+  if (ADMIN_MODE) setStatus(currentUser ? "Tilkoblet. Endringer fra andre enheter vises automatisk." : "Tilkoblet databasen. Logg inn for å redigere.");
+}, error => {
+  console.error(error);
+  if (ADMIN_MODE) setStatus("Kunne ikke lese databasen: " + error.message);
+});
+
+loginBtn.onclick = async () => {
+  try {
+    const result = await signInWithPopup(auth, provider);
+    if (result.user.email?.toLowerCase() !== ADMIN_EMAIL || !result.user.emailVerified) {
+      await signOut(auth);
+      setStatus("Feil konto. Bruk " + ADMIN_EMAIL + ".");
+    }
+  } catch (error) {
+    console.error(error); setStatus("Innlogging feilet: " + error.message);
+  }
+};
+logoutBtn.onclick = () => signOut(auth).catch(error => setStatus(error.message));
+onAuthStateChanged(auth, user => { currentUser = user; updateAdminControls(); });
+editBtn.onclick = edit;
+document.getElementById("addBtn").onclick = () => {
+  const row = document.createElement("div"); row.className = "row";
+  const input = document.createElement("input"); input.placeholder = "Navn " + (fields.children.length + 1); input.maxLength = 48;
+  const remove = document.createElement("button"); remove.textContent = "Fjern"; remove.onclick = () => row.remove();
+  row.append(input, remove); fields.append(row); input.focus();
+};
+document.getElementById("saveBtn").onclick = async () => {
+  if (!currentUser || currentUser.email?.toLowerCase() !== ADMIN_EMAIL || !currentUser.emailVerified) {
+    setStatus("Du må logge inn med " + ADMIN_EMAIL + "."); return;
+  }
+  const updated = Array.from(fields.querySelectorAll("input")).map(input => input.value.trim()).filter(Boolean);
+  if (!updated.length) updated.push("Navn");
+  try {
+    await set(ref(db, "birthdayDisplay/names"), updated);
+    names = updated; localStorage.setItem(CACHE_KEY, JSON.stringify(names)); render(); editor.classList.remove("open");
+    setStatus("Lagret! TV-en oppdateres automatisk.");
+  } catch (error) {
+    console.error(error); setStatus("Kunne ikke lagre: " + error.message);
+  }
+};
+document.getElementById("cancelBtn").onclick = () => editor.classList.remove("open");
+
+// TV view has no editing controls. Add ?admin=1 to the URL on the PC to manage names.
+if (!ADMIN_MODE) document.getElementById("toolbar").style.display = "none";
 render();
 </script></body></html>
