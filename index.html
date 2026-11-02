@@ -11,6 +11,7 @@ h1 span{display:block}
 #names{width:min(100%,1050px);flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-evenly;gap:1.3vh}
 .namebox{flex:1 1 0;min-height:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:1vh 2vw;border:clamp(3px,.55vw,7px) solid #8cff00;border-radius:clamp(18px,2.5vw,38px);background:rgba(0,19,54,.78);box-shadow:0 6px 18px #0007,inset 0 0 18px #164b7655;overflow:hidden}
 .namebox span{font-size:clamp(28px,5vh,66px);font-weight:900;line-height:1.04;overflow-wrap:anywhere;text-shadow:0 3px 8px #0009}
+#tvSyncStatus{position:absolute;bottom:8px;left:8px;right:8px;text-align:center;font-size:12px;line-height:1.3;color:#fff;background:rgba(0,12,35,.72);padding:5px 8px;border-radius:8px;z-index:5;pointer-events:none}
 #toolbar{position:absolute;top:10px;right:10px;z-index:4;opacity:.2}
 #toolbar:hover{opacity:1}
 button{border:1px solid #ffffff77;background:#061a3c;color:white;border-radius:10px;padding:10px 14px;font-size:15px;font-weight:800;cursor:pointer}
@@ -40,6 +41,7 @@ button{border:1px solid #ffffff77;background:#061a3c;color:white;border-radius:1
 <main id="screen">
 <header><h1><span>GRATULERER</span><span>MED DAGEN!</span></h1></header>
 <section id="names"></section>
+<div id="tvSyncStatus" role="status">Kobler til Firebase …</div>
 <div id="toolbar"><button id="loginBtn">Logg inn med Google</button> <button id="editBtn" style="display:none">Rediger navn</button> <button id="logoutBtn" style="display:none">Logg ut</button></div>
 </main>
 <section id="editor"><div id="panel">
@@ -47,6 +49,10 @@ button{border:1px solid #ffffff77;background:#061a3c;color:white;border-radius:1
 <div id="fields"></div><div class="actions">
 <button id="addBtn">＋ Legg til boks</button><button id="saveBtn">Lagre og vis</button><button id="cancelBtn">Avbryt</button>
 </div></div></section>
+<script>
+window.addEventListener("error", e => { const el=document.getElementById("tvSyncStatus"); if(el) el.textContent="JavaScript-feil: "+(e.message||"ukjent feil"); });
+window.addEventListener("unhandledrejection", e => { const el=document.getElementById("tvSyncStatus"); if(el) el.textContent="Tilkoblingsfeil: "+(e.reason?.message||String(e.reason||"ukjent feil")); });
+</script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
 import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js";
@@ -86,7 +92,7 @@ try {
   if (Array.isArray(cached) && cached.length) names = cached.map(String);
 } catch (_) {}
 
-function setStatus(message) { if (statusEl) statusEl.textContent = message; }
+function setStatus(message) { if (statusEl) statusEl.textContent = message; const tvStatus = document.getElementById("tvSyncStatus"); if (tvStatus) tvStatus.textContent = message; }
 function render() {
   namesEl.replaceChildren();
   names.forEach(name => {
@@ -127,10 +133,10 @@ onValue(ref(db, "birthdayDisplay/names"), snapshot => {
   if (!names.length) names = ["Navn"];
   localStorage.setItem(CACHE_KEY, JSON.stringify(names));
   render();
-  if (ADMIN_MODE) setStatus(currentUser ? "Tilkoblet. Endringer fra andre enheter vises automatisk." : "Tilkoblet databasen. Logg inn for å redigere.");
+  setStatus(ADMIN_MODE ? (currentUser ? "Tilkoblet. Endringer fra andre enheter vises automatisk." : "Tilkoblet databasen. Logg inn for å redigere.") : "Tilkoblet Firebase – navn synkronisert.");
 }, error => {
   console.error(error);
-  if (ADMIN_MODE) setStatus("Kunne ikke lese databasen: " + error.message);
+  setStatus("Firebase-feil: " + error.message);
 });
 
 loginBtn.onclick = async () => {
