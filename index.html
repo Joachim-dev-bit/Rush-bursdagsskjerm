@@ -53,11 +53,10 @@ button{border:1px solid #ffffff77;background:#061a3c;color:white;border-radius:1
 window.addEventListener("error", e => { const el=document.getElementById("tvSyncStatus"); if(el) el.textContent="JavaScript-feil: "+(e.message||"ukjent feil"); });
 window.addEventListener("unhandledrejection", e => { const el=document.getElementById("tvSyncStatus"); if(el) el.textContent="Tilkoblingsfeil: "+(e.reason?.message||String(e.reason||"ukjent feil")); });
 </script>
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
-import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
-
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script>
 const firebaseConfig = {
   apiKey: "AIzaSyDI3q1u0RDBBhwoqpI2emtmdXrvbU3a_-s",
   authDomain: "rush-storskjerm.firebaseapp.com",
@@ -68,17 +67,10 @@ const firebaseConfig = {
   appId: "1:744520048601:web:6451390a759d77c8ae03c8",
   measurementId: "G-MMREKWKP5S"
 };
-
 const ADMIN_EMAIL = "haugesund@rushtrampolinepark.no";
 const ADMIN_MODE = new URLSearchParams(location.search).get("admin") === "1";
 const CACHE_KEY = "rush-birthday-portrait-v1";
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
 
-let names = ["Navn"];
-let currentUser = null;
 const namesEl = document.getElementById("names");
 const fields = document.getElementById("fields");
 const editor = document.getElementById("editor");
@@ -87,95 +79,158 @@ const loginBtn = document.getElementById("loginBtn");
 const editBtn = document.getElementById("editBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 
-try {
-  const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
-  if (Array.isArray(cached) && cached.length) names = cached.map(String);
-} catch (_) {}
+let names = ["Navn"];
+let currentUser = null;
 
-function setStatus(message) { if (statusEl) statusEl.textContent = message; const tvStatus = document.getElementById("tvSyncStatus"); if (tvStatus) tvStatus.textContent = message; }
+function setStatus(message) {
+  if (statusEl) statusEl.textContent = message;
+  const tvStatus = document.getElementById("tvSyncStatus");
+  if (tvStatus) tvStatus.textContent = message;
+}
 function render() {
   namesEl.replaceChildren();
   names.forEach(name => {
-    const box = document.createElement("div"); box.className = "namebox";
-    const span = document.createElement("span"); span.textContent = name || " ";
-    box.append(span); namesEl.append(box);
+    const box = document.createElement("div");
+    box.className = "namebox";
+    const span = document.createElement("span");
+    span.textContent = name || " ";
+    box.appendChild(span);
+    namesEl.appendChild(box);
   });
 }
 function updateAdminControls() {
-  const allowed = ADMIN_MODE && currentUser && currentUser.email && currentUser.email.toLowerCase() === ADMIN_EMAIL && currentUser.emailVerified;
+  const allowed = ADMIN_MODE && currentUser && currentUser.email &&
+    currentUser.email.toLowerCase() === ADMIN_EMAIL && currentUser.emailVerified;
   loginBtn.style.display = ADMIN_MODE && !currentUser ? "inline-block" : "none";
   editBtn.style.display = allowed ? "inline-block" : "none";
   logoutBtn.style.display = ADMIN_MODE && currentUser ? "inline-block" : "none";
-  if (ADMIN_MODE && currentUser && !allowed) setStatus("Denne Google-kontoen har ikke tilgang. Logg inn med " + ADMIN_EMAIL + ".");
-  else if (ADMIN_MODE && allowed) setStatus("Innlogget som " + currentUser.email + ". Endringer synkroniseres med TV-en.");
+  if (ADMIN_MODE && currentUser && !allowed) {
+    setStatus("Denne Google-kontoen har ikke tilgang. Logg inn med " + ADMIN_EMAIL + ".");
+  } else if (ADMIN_MODE && allowed) {
+    setStatus("Innlogget som " + currentUser.email + ". Endringer synkroniseres med TV-en.");
+  }
 }
 function edit() {
-  if (!currentUser || currentUser.email?.toLowerCase() !== ADMIN_EMAIL || !currentUser.emailVerified) {
-    setStatus("Du må logge inn med riktig Google-konto først."); return;
+  if (!currentUser || currentUser.email.toLowerCase() !== ADMIN_EMAIL || !currentUser.emailVerified) {
+    setStatus("Du må logge inn med riktig Google-konto først.");
+    return;
   }
   fields.replaceChildren();
   names.forEach((name, index) => {
-    const row = document.createElement("div"); row.className = "row";
-    const input = document.createElement("input"); input.value = name; input.placeholder = "Navn " + (index + 1); input.maxLength = 48;
-    const remove = document.createElement("button"); remove.textContent = "Fjern";
-    remove.onclick = () => { if (fields.children.length > 1) { row.remove(); Array.from(fields.querySelectorAll("input")).forEach((el, i) => el.placeholder = "Navn " + (i + 1)); } };
-    row.append(input, remove); fields.append(row);
+    const row = document.createElement("div");
+    row.className = "row";
+    const input = document.createElement("input");
+    input.value = name;
+    input.placeholder = "Navn " + (index + 1);
+    input.maxLength = 48;
+    const remove = document.createElement("button");
+    remove.textContent = "Fjern";
+    remove.onclick = () => {
+      if (fields.children.length > 1) {
+        row.remove();
+        Array.from(fields.querySelectorAll("input")).forEach((el, i) => el.placeholder = "Navn " + (i + 1));
+      }
+    };
+    row.appendChild(input);
+    row.appendChild(remove);
+    fields.appendChild(row);
   });
   editor.classList.add("open");
 }
 
-// Live read: TV and admin page both listen to the same database path.
-onValue(ref(db, "birthdayDisplay/names"), snapshot => {
-  const value = snapshot.val();
-  if (Array.isArray(value)) names = value.map(v => String(v ?? ""));
-  else if (value && typeof value === "object") names = Object.keys(value).sort((a,b) => Number(a)-Number(b)).map(k => String(value[k] ?? ""));
-  else names = ["Navn"];
-  if (!names.length) names = ["Navn"];
-  localStorage.setItem(CACHE_KEY, JSON.stringify(names));
+try {
+  if (!window.firebase) throw new Error("Firebase-biblioteket ble ikke lastet. Sjekk internett/nettleser på TV-en.");
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const auth = firebase.auth();
+  const provider = new firebase.auth.GoogleAuthProvider();
+  const namesRef = db.ref("birthdayDisplay/names");
+
+  try {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
+    if (Array.isArray(cached) && cached.length) names = cached.map(String);
+  } catch (_) {}
   render();
-  setStatus(ADMIN_MODE ? (currentUser ? "Tilkoblet. Endringer fra andre enheter vises automatisk." : "Tilkoblet databasen. Logg inn for å redigere.") : "Tilkoblet Firebase – navn synkronisert.");
-}, error => {
-  console.error(error);
-  setStatus("Firebase-feil: " + error.message);
-});
 
-loginBtn.onclick = async () => {
-  try {
-    const result = await signInWithPopup(auth, provider);
-    if (result.user.email?.toLowerCase() !== ADMIN_EMAIL || !result.user.emailVerified) {
-      await signOut(auth);
-      setStatus("Feil konto. Bruk " + ADMIN_EMAIL + ".");
+  namesRef.on("value", snapshot => {
+    const value = snapshot.val();
+    if (Array.isArray(value)) names = value.map(v => String(v == null ? "" : v));
+    else if (value && typeof value === "object") {
+      names = Object.keys(value).sort((a,b) => Number(a)-Number(b)).map(k => String(value[k] == null ? "" : value[k]));
+    } else names = ["Navn"];
+    if (!names.length) names = ["Navn"];
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(names)); } catch (_) {}
+    render();
+    setStatus(ADMIN_MODE
+      ? (currentUser ? "Tilkoblet. Endringer fra andre enheter vises automatisk." : "Tilkoblet databasen. Logg inn for å redigere.")
+      : "Tilkoblet Firebase – navn synkronisert.");
+  }, error => {
+    console.error(error);
+    setStatus("Firebase-feil: " + (error.message || error.code || "ukjent feil"));
+  });
+
+  loginBtn.onclick = function() {
+    auth.signInWithPopup(provider).then(function(result) {
+      const user = result.user;
+      if (!user || !user.email || user.email.toLowerCase() !== ADMIN_EMAIL || !user.emailVerified) {
+        return auth.signOut().then(function() {
+          setStatus("Feil konto. Bruk " + ADMIN_EMAIL + ".");
+        });
+      }
+    }).catch(function(error) {
+      console.error(error);
+      setStatus("Innlogging feilet: " + (error.message || error.code));
+    });
+  };
+  logoutBtn.onclick = function() {
+    auth.signOut().catch(error => setStatus(error.message || error.code));
+  };
+  auth.onAuthStateChanged(function(user) {
+    currentUser = user;
+    updateAdminControls();
+  });
+  editBtn.onclick = edit;
+
+  document.getElementById("addBtn").onclick = function() {
+    const row = document.createElement("div");
+    row.className = "row";
+    const input = document.createElement("input");
+    input.placeholder = "Navn " + (fields.children.length + 1);
+    input.maxLength = 48;
+    const remove = document.createElement("button");
+    remove.textContent = "Fjern";
+    remove.onclick = function() { row.remove(); };
+    row.appendChild(input);
+    row.appendChild(remove);
+    fields.appendChild(row);
+    input.focus();
+  };
+  document.getElementById("saveBtn").onclick = function() {
+    if (!currentUser || !currentUser.email || currentUser.email.toLowerCase() !== ADMIN_EMAIL || !currentUser.emailVerified) {
+      setStatus("Du må logge inn med " + ADMIN_EMAIL + ".");
+      return;
     }
-  } catch (error) {
-    console.error(error); setStatus("Innlogging feilet: " + error.message);
-  }
-};
-logoutBtn.onclick = () => signOut(auth).catch(error => setStatus(error.message));
-onAuthStateChanged(auth, user => { currentUser = user; updateAdminControls(); });
-editBtn.onclick = edit;
-document.getElementById("addBtn").onclick = () => {
-  const row = document.createElement("div"); row.className = "row";
-  const input = document.createElement("input"); input.placeholder = "Navn " + (fields.children.length + 1); input.maxLength = 48;
-  const remove = document.createElement("button"); remove.textContent = "Fjern"; remove.onclick = () => row.remove();
-  row.append(input, remove); fields.append(row); input.focus();
-};
-document.getElementById("saveBtn").onclick = async () => {
-  if (!currentUser || currentUser.email?.toLowerCase() !== ADMIN_EMAIL || !currentUser.emailVerified) {
-    setStatus("Du må logge inn med " + ADMIN_EMAIL + "."); return;
-  }
-  const updated = Array.from(fields.querySelectorAll("input")).map(input => input.value.trim()).filter(Boolean);
-  if (!updated.length) updated.push("Navn");
-  try {
-    await set(ref(db, "birthdayDisplay/names"), updated);
-    names = updated; localStorage.setItem(CACHE_KEY, JSON.stringify(names)); render(); editor.classList.remove("open");
-    setStatus("Lagret! TV-en oppdateres automatisk.");
-  } catch (error) {
-    console.error(error); setStatus("Kunne ikke lagre: " + error.message);
-  }
-};
-document.getElementById("cancelBtn").onclick = () => editor.classList.remove("open");
-
-// TV view has no editing controls. Add ?admin=1 to the URL on the PC to manage names.
-if (!ADMIN_MODE) document.getElementById("toolbar").style.display = "none";
-render();
+    const updated = Array.from(fields.querySelectorAll("input"))
+      .map(input => input.value.trim()).filter(Boolean);
+    if (!updated.length) updated.push("Navn");
+    namesRef.set(updated).then(function() {
+      names = updated;
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify(names)); } catch (_) {}
+      render();
+      editor.classList.remove("open");
+      setStatus("Lagret! TV-en oppdateres automatisk.");
+    }).catch(function(error) {
+      console.error(error);
+      setStatus("Kunne ikke lagre: " + (error.message || error.code));
+    });
+  };
+  document.getElementById("cancelBtn").onclick = function() {
+    editor.classList.remove("open");
+  };
+  if (!ADMIN_MODE) document.getElementById("toolbar").style.display = "none";
+  setStatus("Firebase-bibliotek lastet – kobler til databasen …");
+} catch (error) {
+  console.error(error);
+  setStatus("Oppstartsfeil: " + (error.message || error));
+}
 </script></body></html>
