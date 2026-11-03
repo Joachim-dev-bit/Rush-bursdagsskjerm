@@ -81,65 +81,42 @@ header:after{content:"";display:block;width:42%;height:5px;border-radius:99px;ma
 }
 
 
-/* TV-layout v3: large type and horizontal name cards */
-html,body,#screen{width:100%;height:100%;min-height:100%;overflow:hidden}
+/* TV layout v4: consistent landscape layout and large typography */
+html,body{width:100%;height:100%;min-height:100%;margin:0;overflow:hidden;background:#06132f!important}
 #screen{
-  padding:3.5vh 3vw 3vh!important;
+  width:100vw!important;height:100vh!important;min-height:100vh!important;
+  display:flex!important;flex-direction:column!important;align-items:center!important;
+  padding:3vh 3vw 3vh!important;gap:0!important;overflow:hidden!important;isolation:isolate;
   background:
-    radial-gradient(ellipse at 0% 5%,rgba(139,255,0,.95),transparent 37%),
-    radial-gradient(ellipse at 100% 90%,rgba(0,126,255,.9),transparent 43%),
-    linear-gradient(115deg,#062b24 0%,#031b3d 48%,#03133c 100%)!important;
+    radial-gradient(ellipse at 8% 12%,rgba(117,255,0,.92) 0%,rgba(35,190,36,.48) 24%,transparent 49%),
+    radial-gradient(ellipse at 92% 78%,rgba(0,112,255,.92) 0%,rgba(0,58,160,.42) 36%,transparent 63%),
+    linear-gradient(145deg,#06142e 0%,#071b43 52%,#06102b 100%)!important;
 }
-#screen:after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:
-  radial-gradient(ellipse at 0% 45%,transparent 48%,rgba(0,255,175,.22) 49%,transparent 51%),
-  radial-gradient(ellipse at 100% 72%,transparent 45%,rgba(0,185,255,.26) 46%,transparent 49%),
-  linear-gradient(155deg,transparent 68%,rgba(0,170,255,.12) 75%,transparent 82%);}
-header{position:relative;z-index:1;flex:0 0 auto;width:100%;margin:0 0 3vh!important;padding:0!important}
-header:before{font-size:clamp(42px,6vh,92px)!important;margin:0 0 1.2vh!important;letter-spacing:.04em!important}
-h1{font-size:clamp(58px,10vh,150px)!important;line-height:.96!important;font-weight:1000!important;letter-spacing:-.025em!important}
+#screen:after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:
+  radial-gradient(ellipse at 15% 50%,transparent 48%,rgba(0,255,175,.22) 49%,transparent 51%),
+  radial-gradient(ellipse at 85% 68%,transparent 45%,rgba(0,185,255,.28) 46%,transparent 49%),
+  linear-gradient(155deg,transparent 68%,rgba(0,170,255,.14) 75%,transparent 82%);}
+header{position:relative;z-index:1;flex:0 0 auto;width:100%!important;text-align:center!important;margin:0 0 2.5vh!important;padding:0!important;text-shadow:0 3px 14px #00102c}
+header:before{content:"RUSH";display:block;font-size:clamp(30px,4.2vw,64px)!important;font-weight:1000;font-style:italic;letter-spacing:.08em;color:#fff;text-shadow:3px 3px 0 #ed2638,0 0 16px #168dff;margin:0 0 1.5vh!important}
+h1{margin:0!important;font-size:clamp(48px,7.2vw,118px)!important;line-height:.98!important;font-weight:1000!important;letter-spacing:-.02em!important;text-transform:uppercase}
+h1 span{display:block}
 h1 span:first-child{color:#fff!important;text-shadow:0 4px 0 #17345d,0 0 18px #fff5!important}
 h1 span:last-child{color:#9cff00!important;text-shadow:0 4px 0 #2b6900,0 0 22px #8cff0077!important}
-header:after{width:48%;height:7px;margin:1.5vh auto 0!important}
-#names{
-  position:relative;z-index:1;width:100%!important;max-width:none!important;flex:1 1 auto!important;min-height:0!important;
-  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));
-  gap:1.8vh 1.5vw!important;padding:1.2vh 0!important;border:0!important;border-radius:0!important;
-  background:transparent!important;box-shadow:none!important;overflow:visible!important;
-}
-#names:before{display:none!important}
-.namebox{
-  min-width:0;min-height:0!important;flex:none!important;position:relative;z-index:1;
-  display:flex;align-items:center;justify-content:center;text-align:center;
-  padding:1vh .8vw!important;border:clamp(3px,.38vw,7px) solid #13dfff!important;
-  border-radius:clamp(18px,2.2vw,36px)!important;
-  background:linear-gradient(145deg,rgba(0,30,45,.94),rgba(0,17,52,.94))!important;
-  box-shadow:0 0 15px #00dfff88,inset 0 0 20px #087aff44!important;
-}
-.namebox:before{content:"♛";display:none}
-.namebox span{
-  display:block;width:100%;font-size:clamp(42px,6.4vh,104px)!important;font-weight:1000!important;
-  line-height:1!important;letter-spacing:-.02em!important;color:#fff!important;text-transform:uppercase;
-  overflow-wrap:anywhere;text-shadow:0 3px 0 #09264a,0 0 12px #00cfff55!important;
-}
+header:after{content:"";display:block;width:48%;height:clamp(4px,.55vw,8px);border-radius:99px;margin:1.5vh auto 0;background:linear-gradient(90deg,#8dff00,#00d6ff);box-shadow:0 0 14px #00cfff88}
+#names{position:relative;z-index:1;width:100%!important;max-width:none!important;flex:1 1 auto!important;min-height:0!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:2vh 1.4vw!important;padding:1vh 0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;overflow:hidden!important;align-items:stretch!important;justify-items:stretch!important}
+.namebox{min-width:0!important;min-height:0!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;padding:1vh .8vw!important;border:clamp(3px,.38vw,7px) solid #13dfff!important;border-radius:clamp(18px,2.2vw,36px)!important;background:linear-gradient(145deg,rgba(0,30,45,.94),rgba(0,17,52,.94))!important;box-shadow:0 0 15px #00dfff88,inset 0 0 20px #087aff44!important;overflow:hidden!important}
+.namebox span{display:block;width:100%;font-size:clamp(38px,4.4vw,86px)!important;font-weight:1000!important;line-height:1.02!important;letter-spacing:-.025em!important;color:#fff!important;text-transform:uppercase;overflow-wrap:anywhere;text-shadow:0 3px 0 #09264a,0 0 12px #00cfff55!important}
 #tvSyncStatus{display:none!important}
-#toolbar{top:8px;right:8px;z-index:5}
-@media (orientation:portrait){
- #screen{padding:2.5vh 3vw 2.5vh!important}
- header{margin-bottom:2.5vh!important}
- header:before{font-size:clamp(34px,4.8vh,68px)!important}
- h1{font-size:clamp(54px,7.5vh,104px)!important}
- #names{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-rows:repeat(3,minmax(0,1fr))!important;gap:1.4vh 2vw!important}
- .namebox span{font-size:clamp(34px,4.8vh,72px)!important}
+#toolbar{top:8px!important;right:8px!important;z-index:5!important;opacity:.2}
+/* Keep the same horizontal card layout even if the TV browser reports portrait orientation. */
+@media (max-aspect-ratio: 4/5){
+  #screen{padding:2vh 2vw!important}
+  header{margin-bottom:1.5vh!important}
+  header:before{font-size:clamp(24px,3.5vw,48px)!important}
+  h1{font-size:clamp(34px,5.2vw,72px)!important}
+  #names{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:1.2vh 1.5vw!important}
+  .namebox span{font-size:clamp(28px,4vw,58px)!important}
 }
-@media (orientation:landscape){
- #screen{padding:2.5vh 2.5vw!important}
- header{margin-bottom:2vh!important}
- header:before{font-size:clamp(28px,5vh,66px)!important}
- h1{font-size:clamp(58px,10vh,130px)!important}
- #names{grid-template-columns:repeat(3,minmax(0,1fr))!important;grid-template-rows:repeat(2,minmax(0,1fr))!important;gap:2vh 1.3vw!important}
- .namebox span{font-size:clamp(42px,7vh,92px)!important}
-}
-
 </style></head><body>
 <main id="screen">
 <header><h1><span>GRATULERER</span><span>MED DAGEN!</span></h1></header>
@@ -192,9 +169,20 @@ function setStatus(message) {
 }
 function render() {
   while (namesEl.firstChild) namesEl.removeChild(namesEl.firstChild);
+  var count = Math.max(names.length, 1);
+  var cols = count === 1 ? 1 : (count === 4 ? 2 : (count <= 3 ? count : 3));
+  var rows = Math.ceil(count / cols);
+  namesEl.style.gridTemplateColumns = "repeat(" + cols + ", minmax(0, 1fr))";
+  namesEl.style.gridTemplateRows = "repeat(" + rows + ", minmax(0, 1fr))";
+  namesEl.style.justifyItems = count === 1 ? "center" : "stretch";
   names.forEach(name => {
     const box = document.createElement("div");
     box.className = "namebox";
+    if (count === 1) {
+      box.style.width = "min(78%, 1500px)";
+      box.style.height = "min(62%, 520px)";
+      box.style.placeSelf = "center";
+    }
     const span = document.createElement("span");
     span.textContent = name || " ";
     box.appendChild(span);
