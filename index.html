@@ -53,9 +53,10 @@ button{border:1px solid #ffffff77;background:#061a3c;color:white;border-radius:1
 window.addEventListener("error", e => { const el=document.getElementById("tvSyncStatus"); if(el) el.textContent="JavaScript-feil: "+(e.message||"ukjent feil"); });
 window.addEventListener("unhandledrejection", e => { const el=document.getElementById("tvSyncStatus"); if(el) el.textContent="Tilkoblingsfeil: "+(e.reason?.message||String(e.reason||"ukjent feil")); });
 </script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<!-- Firebase v8 Compat: eldre Samsung/Tizen-nettlesere + alternativ CDN hvis Google CDN feiler -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/firebase@8.10.1/firebase-app.js'"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/firebase@8.10.1/firebase-database.js'"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/firebase@8.10.1/firebase-auth.js'"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyDI3q1u0RDBBhwoqpI2emtmdXrvbU3a_-s",
@@ -139,7 +140,7 @@ function edit() {
 }
 
 try {
-  if (!window.firebase) throw new Error("Firebase-biblioteket ble ikke lastet. Sjekk internett/nettleser på TV-en.");
+  if (!window.firebase) throw new Error("Firebase kunne ikke lastes fra Google eller reserve-serveren. Sjekk dato/klokkeslett og nettleseroppdatering på Samsung-TV-en.");
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
   const auth = firebase.auth();
