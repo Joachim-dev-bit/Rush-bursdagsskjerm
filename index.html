@@ -53,10 +53,9 @@ button{border:1px solid #ffffff77;background:#061a3c;color:white;border-radius:1
 window.addEventListener("error", e => { const el=document.getElementById("tvSyncStatus"); if(el) el.textContent="JavaScript-feil: "+(e.message||"ukjent feil"); });
 window.addEventListener("unhandledrejection", e => { const el=document.getElementById("tvSyncStatus"); if(el) el.textContent="Tilkoblingsfeil: "+(e.reason?.message||String(e.reason||"ukjent feil")); });
 </script>
-<!-- Firebase v8 Compat: eldre Samsung/Tizen-nettlesere + alternativ CDN hvis Google CDN feiler -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/firebase@8.10.1/firebase-app.js'"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/firebase@8.10.1/firebase-database.js'"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/firebase@8.10.1/firebase-auth.js'"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyDI3q1u0RDBBhwoqpI2emtmdXrvbU3a_-s",
@@ -89,7 +88,7 @@ function setStatus(message) {
   if (tvStatus) tvStatus.textContent = message;
 }
 function render() {
-  namesEl.replaceChildren();
+  while (namesEl.firstChild) namesEl.removeChild(namesEl.firstChild);
   names.forEach(name => {
     const box = document.createElement("div");
     box.className = "namebox";
@@ -116,7 +115,7 @@ function edit() {
     setStatus("Du må logge inn med riktig Google-konto først.");
     return;
   }
-  fields.replaceChildren();
+  while (fields.firstChild) fields.removeChild(fields.firstChild);
   names.forEach((name, index) => {
     const row = document.createElement("div");
     row.className = "row";
@@ -128,7 +127,7 @@ function edit() {
     remove.textContent = "Fjern";
     remove.onclick = () => {
       if (fields.children.length > 1) {
-        row.remove();
+        if (row.parentNode) row.parentNode.removeChild(row);
         Array.from(fields.querySelectorAll("input")).forEach((el, i) => el.placeholder = "Navn " + (i + 1));
       }
     };
@@ -140,7 +139,7 @@ function edit() {
 }
 
 try {
-  if (!window.firebase) throw new Error("Firebase kunne ikke lastes fra Google eller reserve-serveren. Sjekk dato/klokkeslett og nettleseroppdatering på Samsung-TV-en.");
+  if (!window.firebase) throw new Error("Firebase-biblioteket ble ikke lastet. Sjekk internett/nettleser på TV-en.");
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
   const auth = firebase.auth();
@@ -200,7 +199,7 @@ try {
     input.maxLength = 48;
     const remove = document.createElement("button");
     remove.textContent = "Fjern";
-    remove.onclick = function() { row.remove(); };
+    remove.onclick = function() { if (row.parentNode) row.parentNode.removeChild(row); };
     row.appendChild(input);
     row.appendChild(remove);
     fields.appendChild(row);
